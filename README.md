@@ -22,14 +22,14 @@ Pipeline de **10 etapas** en el que cada etapa usa la estructura de datos más a
 
 ## Tabla de roles y contribución individual
 
-> Reemplazar "Integrante N" por los nombres reales. Cada integrante es **responsable principal** de al menos dos etapas o de una familia de algoritmos y expone esa parte. El historial de commits debe ser coherente con esta tabla (cada integrante sube los archivos de su parte desde su propia cuenta).
+> Cada integrante es **responsable principal** de al menos dos etapas o de una familia de algoritmos y expone esa parte. El historial de commits debe ser coherente con esta tabla (cada integrante sube los archivos de su parte desde su propia cuenta).
 
 | Integrante | Responsable principal | Archivos | Aporte concreto | Expone |
 |---|---|---|---|---|
-| Integrante 1 | **E0 Ingesta, E1 Preprocesamiento, E2 Cola de prioridades** y generador del stream | `structures/linked_queue.py`, `sorting.py`, `heap.py`; `stages/s0-s2`; `data/generator.py`, `data/rees46_loader.py` | Cola FIFO con backpressure; Merge Sort estable + deduplicación por búsqueda binaria; heap con 9 clases de prioridad y medición de espera; generador vectorizado de 10M eventos con fraude, duplicados y registros sucios | Contexto, datos, E0–E2 y demo de prioridades |
-| Integrante 2 | **E3 Almacenamiento/caché, E4 B+Tree, E5 KD-Tree** | `hash_table.py`, `lru_cache.py`, `sparse_matrix.py`, `bplus_tree.py`, `kd_tree.py`; `stages/s3-s5`; `bench_base.py` | Tabla hash con sondeo lineal; LRU O(1); matriz dispersa DOK→CSR; B+Tree paginado en disco con buffer pool; KD-Tree con KNN exacto y línea base; benchmarks de estructuras base | E3–E5, resultados de estructuras base |
-| Integrante 3 | **Familias de filtrado probabilístico (E6) y similitud (E7)** | `bloom_filter.py`, `count_min_sketch.py`, `hashing.py`, `minhash_lsh.py`, `hnsw.py`; `stages/s6-s7`; `bench_prob.py`, `bench_similarity.py` | Bloom + verificación exacta; CMS con ventana deslizante, umbral y alertas re-inyectadas; MinHash+LSH en streaming y ajuste de (b, r); HNSW con heurística de vecinos; comparaciones contra exacto y fuerza bruta | E6–E7 y demo de filtrado y similitud |
-| Integrante 4 | **Familias de influencia y comunidades (E8) y E9 Servicio**, orquestador | `graph/*.py`, `trie.py`; `stages/s8-s9`; `pipeline.py`, `dashboard.py`; `bench_graph.py`, `bench_pipeline.py`, `plots.py` | Grafo de co-compra desde el B+Tree; PageRank/PPR; Louvain vs Label Propagation (modularidad, estabilidad); Trie con top-K; recomendador Top-K; panel HTML; integración de punta a punta | E8–E9, demo del servicio y conclusiones |
+| Frank Laura Borja | **E0 Ingesta, E1 Preprocesamiento, E2 Cola de prioridades** y generador del stream | `structures/linked_queue.py`, `sorting.py`, `heap.py`; `stages/s0-s2`; `data/generator.py`, `data/rees46_loader.py` | Cola FIFO con backpressure; Merge Sort estable + deduplicación por búsqueda binaria; heap con 9 clases de prioridad y medición de espera; generador vectorizado de 10M eventos con fraude, duplicados y registros sucios | Contexto, datos, E0–E2 y demo de prioridades |
+| Josué Campos Quiroz | **E3 Almacenamiento/caché, E4 B+Tree, E5 KD-Tree** | `hash_table.py`, `lru_cache.py`, `sparse_matrix.py`, `bplus_tree.py`, `kd_tree.py`; `stages/s3-s5`; `bench_base.py` | Tabla hash con sondeo lineal; LRU O(1); matriz dispersa DOK→CSR; B+Tree paginado en disco con buffer pool; KD-Tree con KNN exacto y línea base; benchmarks de estructuras base | E3–E5, resultados de estructuras base |
+| Luis Dávila Tello | **Familias de filtrado probabilístico (E6) y similitud (E7)** | `bloom_filter.py`, `count_min_sketch.py`, `hashing.py`, `minhash_lsh.py`, `hnsw.py`; `stages/s6-s7`; `bench_prob.py`, `bench_similarity.py` | Bloom + verificación exacta; CMS con ventana deslizante, umbral y alertas re-inyectadas; MinHash+LSH en streaming y ajuste de (b, r); HNSW con heurística de vecinos; comparaciones contra exacto y fuerza bruta | E6–E7 y demo de filtrado y similitud |
+| Mauricio Vallejos Garcia | **Familias de influencia y comunidades (E8) y E9 Servicio**, orquestador | `graph/*.py`, `trie.py`; `stages/s8-s9`; `pipeline.py`, `dashboard.py`; `bench_graph.py`, `bench_pipeline.py`, `plots.py` | Grafo de co-compra desde el B+Tree; PageRank/PPR; Louvain vs Label Propagation (modularidad, estabilidad); Trie con top-K; recomendador Top-K; panel HTML; integración de punta a punta | E8–E9, demo del servicio y conclusiones |
 
 Responsabilidades compartidas: informe (cada integrante redacta la investigación de su parte), notebooks y pruebas.
 
@@ -208,16 +208,16 @@ El enunciado evalúa el historial de contribuciones. Recomendamos que **cada int
 
 ```bash
 git init && git add README.md requirements.txt .gitignore && git commit -m "Estructura del repositorio"      # cualquiera
-# Integrante 1
+# Frank Laura Borja
 git add src/ecostream/structures/{linked_queue,sorting,heap}.py src/ecostream/stages/s0_* src/ecostream/stages/s1_* src/ecostream/stages/s2_* src/ecostream/data/
 git commit -m "E0-E2: FIFO, Merge Sort + búsqueda binaria, heap de prioridades y generador"
-# Integrante 2
+# Josué Campos Quiroz
 git add src/ecostream/structures/{hash_table,lru_cache,sparse_matrix,bplus_tree,kd_tree}.py src/ecostream/stages/s3_* src/ecostream/stages/s4_* src/ecostream/stages/s5_* experiments/bench_base.py
 git commit -m "E3-E5: hash table, LRU, matriz dispersa, B+Tree en disco y KD-Tree"
-# Integrante 3
+# Luis Dávila Tello
 git add src/ecostream/structures/{hashing,bloom_filter,count_min_sketch,minhash_lsh,hnsw}.py src/ecostream/stages/s6_* src/ecostream/stages/s7_* experiments/bench_prob.py experiments/bench_similarity.py
 git commit -m "E6-E7: Bloom + CMS con ventana, MinHash+LSH y HNSW"
-# Integrante 4
+# Mauricio Vallejos Garcia
 git add src/ecostream/graph/ src/ecostream/structures/trie.py src/ecostream/stages/ src/ecostream/pipeline.py src/ecostream/dashboard.py src/ecostream/__init__.py experiments/ scripts/ notebooks/ tests/ docs/ Proyecto_Final_Grupo3.pdf
 git commit -m "E8-E9, orquestador, experimentos, notebooks, informe"
 ```
