@@ -1,0 +1,208 @@
+
+==============================================================================
+0. Configuración
+==============================================================================
+eventos=300,000  productos=20,000  micro-lote=5000  semilla=42
+eventos trazados: {'compra_express': 150084, 'vista': 150045, 'pago_fraudulento': 56098, 'registro_sucio': 150639, 'duplicado': 152465}
+inicialización (catálogo, hash, B+Tree bulk load, KD-Tree, HNSW, Trie): 104.5s
+  lote   20: 99,996 eventos procesados, heap=1,666, alertas=4, 13.3s
+  lote   40: 196,129 eventos procesados, heap=478, alertas=6, 26.4s
+  lote   60: 291,387 eventos procesados, heap=0, alertas=6, 40.8s
+
+==============================================================================
+1. Recorrido de eventos por las 10 etapas
+==============================================================================
+
+▶ compra_express (event_id=150084)
+   [E0] encolado en FIFO (posición 4920)
+   [E0] desencolado en micro-lote de 5652
+   [E1] validado/normalizado, único (búsqueda binaria en 145123 ids recientes), reordenado por tiempo
+   [E2] insertado en heap con prioridad 2 (compra_express/premium); heap=5655
+   [E2] extraído del heap tras esperar 0 ticks
+   [E3] lookup O(1) en hash table vía LRU (hit-rate 52%), perfil de usuario e interacción en matriz dispersa actualizados; producto 'Juguete Lego O46' (S/ 109.25)
+   [E4] orden 5228 indexada en B+Tree (altura 2, 51 páginas de 4 KB)
+   [E5] KD-Tree: 5 productos con atributos más cercanos [10733, 3722, 17878, 8360, 5690]
+   [E6] orden en estado 'APROBADO' (su intento de pago pasó por Bloom + verificación exacta y CMS); compra contada en el CMS de tendencias (~1 en la última hora)
+   [E7] compra aprobada alimenta los conjuntos de compradores; similares por comportamiento (LSH) [2998, 2076, 3404] y por contenido (HNSW) [4973, 1678, 8990]
+   [E8] orden 5228 entra al grafo de co-compra en la siguiente reconstrucción (ventana 7 días vía range scan del B+Tree)
+   [E9] Top-5 recomendado al usuario: Mouse Hp X319 (0.22), Mouse Apple U883 (0.15), Juguete Fisherprice H268 (0.14), Juguete Fisherprice J432 (0.14), Juguete Fisherprice S76 (0.14)
+
+▶ vista (event_id=150045)
+   [E0] encolado en FIFO (posición 4881)
+   [E0] desencolado en micro-lote de 5652
+   [E1] validado/normalizado, único (búsqueda binaria en 145123 ids recientes), reordenado por tiempo
+   [E2] insertado en heap con prioridad 8 (vista/busqueda); heap=5655
+   [E2] extraído del heap tras esperar 1 ticks
+   [E3] lookup O(1) en hash table vía LRU (hit-rate 52%), perfil de usuario e interacción en matriz dispersa actualizados; producto 'Monitor Lg S811' (S/ 489.86)
+   [E5] KD-Tree: 5 productos con atributos más cercanos [9734, 19848, 5565, 7920, 3940]
+   [E9] Top-5 recomendado al usuario: Cargador Apple O869 (0.39), Smartwatch Motorola U986 (0.39), Audífonos Apple G242 (0.39), Funda Huawei G324 (0.37), Smartphone Motorola O419 (0.26)
+
+▶ pago_fraudulento (event_id=56098)
+   [E0] encolado en FIFO (posición 44)
+   [E0] desencolado en micro-lote de 6688
+   [E1] validado/normalizado, único (búsqueda binaria en 55985 ids recientes), reordenado por tiempo
+   [E2] insertado en heap con prioridad 1 (pago); heap=7538
+   [E2] extraído del heap tras esperar 0 ticks
+   [E3] evento de pago sin producto: se consulta/actualiza la tabla hash de órdenes y pagos
+   [E6] Bloom/CMS: estimación ventana=18, decisión=BLOQUEADO velocidad: ~18 intentos en 5 min (umbral 15); además token de pago en lista negra (positivo del Bloom verificado)
+   [E9] reflejado en el panel de alertas/actividad
+
+▶ registro_sucio (event_id=150639)
+   [E0] encolado en FIFO (posición 5488)
+   [E0] desencolado en micro-lote de 5652
+   [E1] rechazado: precio_negativo
+
+▶ duplicado (event_id=152465)
+   [E0] encolado en FIFO (posición 1692)
+   [E0] encolado en FIFO (posición 1696)
+   [E0] desencolado en micro-lote de 5915
+   [E0] desencolado en micro-lote de 5915
+   [E1] copia duplicada eliminada: Merge Sort por event_id + descarte de adyacentes iguales (O(b log b))
+   [E1] validado/normalizado, único (búsqueda binaria en 150651 ids recientes), reordenado por tiempo
+   [E2] insertado en heap con prioridad 8 (vista/busqueda); heap=6461
+   [E2] extraído del heap tras esperar 0 ticks
+   [E3] lookup O(1) en hash table vía LRU (hit-rate 52%), perfil de usuario e interacción en matriz dispersa actualizados; producto 'Zapatillas Levis S801' (S/ 497.87)
+   [E5] KD-Tree: 5 productos con atributos más cercanos [12709, 4032, 1651, 18935, 15766]
+   [E9] Top-5 recomendado al usuario: Laptop Lg D108 (0.23), Zapatillas Puma Z212 (0.14), Laptop Lg I558 (0.14), Laptop Apple N500 (0.14), Laptop Apple I702 (0.13)
+
+==============================================================================
+2. Prioridades (E2): espera promedio en ticks por clase
+==============================================================================
+   alerta                     0.000
+   pago                       0.000
+   compra_express/premium     0.000
+   compra_estandar            0.000
+   compra_programada          0.000
+   devolucion                 0.000
+   carrito                    0.000
+   resena                     0.000
+   vista/busqueda             0.507
+   backlog máximo del heap: 10,792 eventos
+
+==============================================================================
+3. Filtrado probabilístico (E6)
+==============================================================================
+   Bloom: m=718,880 bits, k=10, 87.8 KB; positivos=383, verificados=383, falsos positivos=0 (dejados pasar tras verificar)
+   CMS ventana 5 min: 1487 KB; alertas de velocidad=6
+   Órdenes: {'aprobado': 10448, 'bloqueado': 43, 'pendiente': 7}
+     alerta → dispositivo 10000005: velocidad: ~16 intentos en 5 min (umbral 15)
+     alerta → dispositivo 10000001: velocidad: ~16 intentos en 5 min (umbral 15); además token de pago en lista negra (positivo del Bloom verificado)
+     alerta → dispositivo 10000000: velocidad: ~16 intentos en 5 min (umbral 15); además token de pago en lista negra (positivo del Bloom verificado)
+     alerta → dispositivo 10000003: velocidad: ~16 intentos en 5 min (umbral 15)
+     alerta → dispositivo 10000002: velocidad: ~16 intentos en 5 min (umbral 15)
+
+==============================================================================
+4. Similitud aproximada vs exacta (E7)
+==============================================================================
+   Producto consulta: Licuadora Lg R336 (id 6890)
+   MinHash+LSH (b=32, r=2, umbral≈0.18): 1.69 ms vs fuerza bruta Jaccard: 4.83 ms; recall vecinos J≥0.2 = 4/4; recall@10 total = 4/10 (los demás tienen J<0.2, bajo el umbral de diseño)
+      LSH  J=0.58  Licuadora Bosch F222
+      LSH  J=0.33  Licuadora Bosch O932
+      LSH  J=0.31  Licuadora Electrolux R637
+      LSH  J=0.29  Licuadora Philips D495
+      LSH  J=0.03  Licuadora Electrolux C754
+   HNSW: 2.94 ms vs KNN exacto: 3.70 ms; recall@10 = 10/10
+      HNSW cos=0.89  Licuadora Lg H658
+      HNSW cos=0.88  Licuadora Lg E359
+      HNSW cos=0.88  Licuadora Lg Y744
+      HNSW cos=0.88  Licuadora Lg D48
+      HNSW cos=0.87  Licuadora Lg H410
+   KD-Tree (E5) verificado contra fuerza bruta: True
+
+==============================================================================
+5. Grafo de co-compra (E8)
+==============================================================================
+   ventana 7 días: 2,432 órdenes aprobadas → 20,000 nodos, 5,047 aristas
+   Top-10 PageRank vs Top-10 grado: 8/10 en común
+      #1 PR=0.00327 grado=86  Licuadora Lg R336
+      #2 PR=0.00317 grado=89  Televisor Jbl T224
+      #3 PR=0.00305 grado=94  Funda Huawei G324
+      #4 PR=0.00297 grado=87  Cargador Apple W462
+      #5 PR=0.00277 grado=82  Laptop Apple K499
+   Louvain: Q=0.8164, 190 comunidades, 1.49s
+   Label Propagation: Q=0.6317, 496 comunidades, 0.19s
+   Comunidades Louvain más grandes (categorías dominantes):
+      C40: 264 productos → Laptop (91), Mouse (43), Teclado (42), Monitor (26)
+      C50: 188 productos → Audífonos (75), Smartphone (50), Televisor (41), Cargador (6)
+      C121: 180 productos → Cargador (67), Smartphone (37), Cámara (25), Tablet (18)
+      C23: 160 productos → Tomatodo (46), Zapatillas (36), Jean (28), Polo (17)
+      C10: 147 productos → Funda (54), Smartphone (43), Tablet (13), Perfume (7)
+
+==============================================================================
+6. Servicio al usuario final (E9)
+==============================================================================
+   autocompletar 'smart': Smartwatch Xiaomi Z960 | Smartwatch Huawei C150 | Smartphone Motorola U399 | Smartphone Jbl K832
+   autocompletar 'lap': Laptop Apple K499 | Laptop Lg D108 | Laptop Logitech B593 | Laptop Lg I558
+   autocompletar 'zapa': Zapatillas Adidas F742 | Zapatillas Adidas P858 | Zapatillas Adidas K530 | Zapatillas Puma A463
+   Usuario 0: compró ['Jean Levis J666', 'Casaca Levis O558', 'Casaca Adidas O903']
+      rec 0.519 [LSH+PPR] Casaca Nike F552
+      rec 0.258 [LSH] Casaca Levis Y69
+      rec 0.244 [LSH] Casaca Levis I108
+      rec 0.232 [PPR] Jean Levis N35
+      rec 0.227 [PPR] Jean Nike R81
+   Laptops S/ 2000-3000 por influencia (B+Tree rango + PR): Laptop Lg X441, Laptop Lenovo U945, Laptop Apple U91
+   Panel HTML: D:\Maestria UTEC\Clases\Ciclo 2\Estructura de datos y algoritmos\Proyecto\proyecto-eda-grupo3\docs\dashboard.html
+
+==============================================================================
+7. Resumen
+==============================================================================
+{
+ "eventos_generados": 306000,
+ "eventos_procesados": 299696,
+ "segundos": 45.87,
+ "throughput_ev_s": 6534,
+ "ordenes": {
+  "aprobado": 10448,
+  "bloqueado": 43,
+  "pendiente": 7
+ },
+ "alertas_fraude": 6,
+ "ventas_soles": 18456990.45,
+ "espera_promedio_ticks": {
+  "alerta": 0.0,
+  "pago": 0.0,
+  "compra_express/premium": 0.0,
+  "compra_estandar": 0.0,
+  "compra_programada": 0.0,
+  "devolucion": 0.0,
+  "carrito": 0.0,
+  "resena": 0.0,
+  "vista/busqueda": 0.507
+ },
+ "max_backlog_heap": 10792,
+ "lru_hit_rate_productos": 0.5234,
+ "lru_hit_rate_kdtree": 0.6899,
+ "bptree_io": {
+  "ordenes": {
+   "disk_reads": 0,
+   "disk_writes": 0,
+   "pages": 104,
+   "pool_hit_rate": 1.0,
+   "height": 2
+  },
+  "precios": {
+   "disk_reads": 0,
+   "disk_writes": 0,
+   "pages": 114,
+   "pool_hit_rate": 1.0,
+   "height": 2
+  }
+ },
+ "grafo": {
+  "reconstrucciones": 4.0,
+  "ordenes_en_ventana": 2432,
+  "aristas": 5047,
+  "modularidad": 0.8164,
+  "comunidades": 190
+ }
+}
+   {'etapa': 'E0 Ingesta (FIFO lista enlazada)', 'segundos': 2.5512, 'entradas': 306000, 'salidas': 306000, 'us_por_item': 8.34}
+   {'etapa': 'E1 Preprocesamiento (Merge Sort + búsqueda binaria)', 'segundos': 4.4411, 'entradas': 306000, 'salidas': 299696, 'us_por_item': 14.51, 'normalizado_tipo': 304.0, 'precio_faltante': 327.0, 'normalizado_precio': 279.0, 'normalizado_categoria': 271.0, 'rechazado_precio_negativo': 323.0, 'duplicado_intra_lote': 5975.0, 'duplicado_entre_lotes': 6.0}
+   {'etapa': 'E2 Cola de prioridades (min-heap)', 'segundos': 3.0168, 'entradas': 299696, 'salidas': 299702, 'us_por_item': 10.07}
+   {'etapa': 'E3 Hash table + LRU + matriz dispersa', 'segundos': 2.4743, 'entradas': 299696, 'salidas': 299696, 'us_por_item': 8.26, 'precio_completado': 312.0}
+   {'etapa': 'E4 B+Tree (índice en disco)', 'segundos': 0.0839, 'entradas': 10498, 'salidas': 10498, 'us_por_item': 8.0}
+   {'etapa': 'E5 KD-Tree (KNN exacto)', 'segundos': 18.0821, 'entradas': 246430, 'salidas': 246430, 'us_por_item': 73.38}
+   {'etapa': 'E6 Bloom Filter + Count-Min Sketch', 'segundos': 1.9617, 'entradas': 10881, 'salidas': 10881, 'us_por_item': 180.29, 'pagos_aprobado': 10495.0, 'bloom_positivos': 383.0, 'bloom_verificados': 383.0, 'pagos_bloqueado': 386.0, 'alertas_velocidad': 6.0, 'alertas_atendidas': 6.0, 'bloom_falsos_positivos': 0.0}
+   {'etapa': 'E7 MinHash+LSH y HNSW', 'segundos': 105.3193, 'entradas': 22756, 'salidas': 22756, 'us_por_item': 4628.2, 'lsh_reconstrucciones': 4.0, 'productos_en_lsh': 17043}
+   {'etapa': 'E8 Grafo co-compra: PageRank + Louvain', 'segundos': 3.5973, 'entradas': 0, 'salidas': 0, 'reconstrucciones': 4.0, 'ordenes_en_ventana': 2432, 'aristas': 5047, 'modularidad': 0.8164, 'comunidades': 190}
+   {'etapa': 'E9 Servicio: Trie, Top-K, panel', 'segundos': 2.5372, 'entradas': 7, 'salidas': 0, 'us_por_item': 362456.36}
