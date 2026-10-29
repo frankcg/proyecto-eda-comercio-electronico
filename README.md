@@ -178,7 +178,6 @@ python scripts/demo.py | Out-File -Encoding utf8 docs/demo_output.txt
 start docs/dashboard.html
 ```
 
-Durante la presentación no se ejecuta la demo (tarda varios minutos): se muestran `docs/demo_output.txt` y `docs/dashboard.html` siguiendo el [guion de la demo](docs/presentacion/guion_demo.md). Los experimentos se presentan con las figuras de `experiments/figures/`.
 
 Para usar el dataset real REES46 (Kaggle) en lugar del stream sintético:
 
@@ -200,26 +199,6 @@ Esquema del dataset público **REES46 eCommerce behavior data** (Kaggle) como ba
 - **Louvain vs Label Propagation**: Louvain más estable (NMI 0.999 vs 0.945) y con mayor modularidad en el grafo real de co-compra (0.755 vs 0.630).
 
 Detalle en [`docs/resumen_resultados.md`](docs/resumen_resultados.md) y en el informe.
-
-## Cómo subir el repositorio con un historial coherente con los roles
-
-El enunciado evalúa el historial de contribuciones. Recomendamos que **cada integrante haga commit de su parte desde su propia cuenta**:
-
-```bash
-git init && git add README.md requirements.txt .gitignore && git commit -m "Estructura del repositorio"      # cualquiera
-# Frank Laura Borja
-git add src/ecostream/structures/{linked_queue,sorting,heap}.py src/ecostream/stages/s0_* src/ecostream/stages/s1_* src/ecostream/stages/s2_* src/ecostream/data/
-git commit -m "E0-E2: FIFO, Merge Sort + búsqueda binaria, heap de prioridades y generador"
-# Josué Campos Quiroz
-git add src/ecostream/structures/{hash_table,lru_cache,sparse_matrix,bplus_tree,kd_tree}.py src/ecostream/stages/s3_* src/ecostream/stages/s4_* src/ecostream/stages/s5_* experiments/bench_base.py
-git commit -m "E3-E5: hash table, LRU, matriz dispersa, B+Tree en disco y KD-Tree"
-# Luis Dávila Tello
-git add src/ecostream/structures/{hashing,bloom_filter,count_min_sketch,minhash_lsh,hnsw}.py src/ecostream/stages/s6_* src/ecostream/stages/s7_* experiments/bench_prob.py experiments/bench_similarity.py
-git commit -m "E6-E7: Bloom + CMS con ventana, MinHash+LSH y HNSW"
-# Mauricio Vallejos Garcia
-git add src/ecostream/graph/ src/ecostream/structures/trie.py src/ecostream/stages/ src/ecostream/pipeline.py src/ecostream/dashboard.py src/ecostream/__init__.py experiments/ scripts/ notebooks/ tests/ docs/ Proyecto_Final_Grupo3.pdf
-git commit -m "E8-E9, orquestador, experimentos, notebooks, informe"
-```
 
 ## Estructura del repositorio
 
